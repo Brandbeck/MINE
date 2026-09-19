@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MINE</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      color: #1f2937;
+      min-height: 100vh;
+    }
+    .hidden { display: none !important; }
+
+    #loginScreen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      background: white;
+      padding: 32px;
+      border-radius: 18px;
+      box-shadow: 0 10px 35px rgba(0,0,0,.08);
+    }
+    .logo {
+      font-size: 38px;
+      font-weight: 800;
+      text-align: center;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #6b7280;
+      margin-bottom: 28px;
+    }
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      margin: 16px 0 7px;
+    }
+    input {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 16px;
+      outline: none;
+    }
+    input:focus { border-color: #111827; }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .primary {
+      width: 100%;
+      margin-top: 22px;
+      background: #111827;
+      color: white;
+    }
+    .primary:hover { opacity: .9; }
+    .error {
+      margin-top: 14px;
+      padding: 10px 12px;
+      border-radius: 9px;
+      background: #fee2e2;
+      color: #991b1b;
+      font-size: 14px;
+    }
+
+    #app {
+      min-height: 100vh;
+      display: flex;
+    }
+    aside {
+      width: 240px;
+      background: #111827;
+      color: white;
+      padding: 22px 16px;
+      flex-shrink: 0;
+    }
+    .brand {
+      font-size: 27px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      padding: 0 10px 28px;
+    }
+    nav button {
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      color: #d1d5db;
+      margin-bottom: 6px;
+    }
+    nav button:hover, nav button.active {
+      background: #374151;
+      color: white;
+    }
+    .logout {
+      margin-top: 30px;
+      width: 100%;
+      background: #374151;
+      color: white;
+    }
+    main {
+      flex: 1;
+      padding: 28px;
+      max-width: 1400px;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 26px;
+    }
+    .topbar h1 { margin: 0; font-size: 30px; }
+    .user-pill {
+      background: white;
+      border-radius: 999px;
+      padding: 9px 14px;
+      box-shadow: 0 3px 15px rgba(0,0,0,.06);
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.06);
+    }
+    .card-icon { font-size: 30px; margin-bottom: 10px; }
+    .card h2 { margin: 0 0 8px; font-size: 19px; }
+    .card p { color: #6b7280; margin: 0; line-height: 1.5; }
+    .placeholder {
+      margin-top: 20px;
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.06);
+    }
+
+    @media (max-width: 800px) {
+      #app { display: block; }
+      aside { width: 100%; padding: 14px; }
+      .brand { padding: 4px 8px 12px; }
+      nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+      nav button { margin: 0; text-align: center; }
+      .logout { margin-top: 8px; }
+      main { padding: 18px; }
+      .cards { grid-template-columns: 1fr; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .stat {
+      background: white;
+      border-radius: 14px;
+      padding: 16px 18px;
+      box-shadow: 0 4px 18px rgba(0,0,0,.05);
+    }
+    .stat strong { display:block; font-size: 26px; margin-bottom: 4px; }
+    .stat span { color:#6b7280; font-size:13px; }
+    .toolbar {
+      display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap;
+    }
+    .toolbar .small { width:auto; margin-top:0; }
+    .search { flex:1; min-width:190px; }
+    .sort { padding:12px; border:1px solid #d1d5db; border-radius:10px; background:white; }
+    .child-card {
+      background:white; border-radius:16px; padding:18px; margin-bottom:14px;
+      box-shadow:0 4px 18px rgba(0,0,0,.05);
+    }
+    .child-head { display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; }
+    .child-name { font-size:20px; font-weight:800; }
+    .badge { padding:6px 10px; border-radius:999px; font-size:12px; font-weight:800; }
+    .blue { background:#dbeafe; color:#1d4ed8; }
+    .orange { background:#ffedd5; color:#c2410c; }
+    .green { background:#dcfce7; color:#15803d; }
+    .gray { background:#f3f4f6; color:#4b5563; }
+    .training-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; }
+    .training-box { border:1px solid #e5e7eb; border-radius:12px; padding:13px; }
+    .training-box h4 { margin:0 0 8px; }
+    .training-box p { margin:4px 0; color:#4b5563; font-size:14px; }
+    .actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+    .secondary { background:#e5e7eb; color:#111827; }
+    .danger { background:#fee2e2; color:#991b1b; }
+    .checkline { display:flex; align-items:center; gap:8px; font-weight:600; }
+    .checkline input { width:auto; }
+    .two { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .muted { color:#6b7280; }
+    .modal {
+      position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center;
+      justify-content:center; padding:18px; z-index:100;
+    }
+    .modal-card {
+      width:100%; max-width:520px; background:white; border-radius:18px; padding:22px;
+      max-height:92vh; overflow:auto;
+    }
+    .modal-head { display:flex; justify-content:space-between; align-items:center; }
+    .modal-head h2 { margin:0 0 10px; }
+    .icon-btn { background:transparent; padding:6px 8px; }
+    .modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:20px; }
+    .modal-actions .primary { width:auto; margin-top:0; }
+    .empty { background:white; padding:25px; border-radius:16px; color:#6b7280; text-align:center; }
+    .work-row {
+      display:grid;
+      grid-template-columns: 1fr 1.2fr 2fr;
+      gap:18px;
+      align-items:center;
+    }
+    .work-cell { min-width:0; }
+    .work-label {
+      display:block;
+      color:#6b7280;
+      font-size:12px;
+      margin-bottom:5px;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:.03em;
+    }
+    .work-cell strong {
+      display:block;
+      font-size:16px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .work-user {
+      margin-top:10px;
+      color:#9ca3af;
+      font-size:12px;
+    }
+
+    @media (max-width:800px) {
+      .stats { grid-template-columns:1fr 1fr; }
+      .training-grid { grid-template-columns:1fr; }
+      .work-row { grid-template-columns:1fr 1fr; gap:12px; }
+      .work-scope { grid-column:1 / -1; }
+    }
+    @media (max-width:500px) {
+      .stats { grid-template-columns:1fr 1fr; }
+      .two { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<section id="loginScreen">
+  <div class="login-card">
+    <div class="logo">MINE</div>
+    <div class="subtitle">Deine persönliche Übersicht</div>
+
+    <form id="loginForm">
+      <label for="username">Benutzername</label>
+      <input id="username" autocomplete="username" placeholder="Benutzername" required>
+
+      <label for="password">Passwort</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="Passwort" required>
+
+      <button class="primary" type="submit">ANMELDEN</button>
+      <div id="loginError" class="error hidden"></div>
+    </form>
+  </div>
+</section>
+
+<section id="app" class="hidden">
+  <aside>
+    <div class="brand">MINE</div>
+    <nav>
+      <button class="active" data-section="dashboard">🏠 Übersicht</button>
+      <button data-section="schnupper">🎾 Schnuppertraining</button>
+      <button data-section="arbeitszeit">⏱️ Arbeitszeiten</button>
+    </nav>
+    <button id="logoutBtn" class="logout">Abmelden</button>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <h1 id="pageTitle">Übersicht</h1>
+      <div class="user-pill">👤 <span id="currentUser">Benutzer</span></div>
+    </div>
+
+    <div id="content">
+      <div id="dashboard" class="section">
+        <div class="cards">
+          <div class="card">
+            <div class="card-icon">🎾</div>
+            <h2>Schnuppertraining</h2>
+          <button id="trainingPdfBtn" type="button" class="secondary" style="margin-top:10px;">📄 PDF speichern</button>
+            <p>Verwalte Kinder, Trainings und Anmeldungen.</p>
+          </div>
+          <div class="card">
+            <div class="card-icon">⏱️</div>
+            <h2>Arbeitszeiten</h2>
+            <p>Arbeitszeiten erfassen und später auswerten.</p>
+          </div>
+        </div>
+        <div class="placeholder">
+          <h2>Willkommen bei MINE 👋</h2>
+          <p>Das Grundgerüst steht. Die einzelnen Bereiche bauen wir jetzt Schritt für Schritt aus.</p>
+        </div>
+      </div>
+
+      <div id="schnupper" class="section hidden">
+        <div class="stats" id="trainingStats">
+          <div class="stat"><strong id="statKinder">0</strong><span>Kinder insgesamt</span></div>
+          <div class="stat"><strong id="statMoeglich">0</strong><span>Noch mindestens 1× möglich</span></div>
+          <div class="stat"><strong id="statZwei">0</strong><span>2× geschnuppert</span></div>
+          <div class="stat"><strong id="statAnmeldungen">0</strong><span>Anmeldungen</span></div>
+        </div>
+
+        <div class="toolbar">
+          <button id="addChildBtn" class="primary small">+ Kind hinzufügen</button>
+          <input id="childSearch" class="search" placeholder="🔎 Kind suchen ...">
+          <select id="childSort" class="sort">
+            <option value="newest">Neueste zuerst</option>
+            <option value="child">Kind A–Z</option>
+            <option value="first">1. Training</option>
+            <option value="second">2. Training</option>
+            <option value="registration">Anmeldung</option>
+          </select>
+        </div>
+
+        <div id="childrenList"></div>
+      </div>
+
+      <div id="childModal" class="modal hidden">
+        <div class="modal-card">
+          <div class="modal-head">
+            <h2 id="childModalTitle">Kind hinzufügen</h2>
+            <button class="icon-btn" id="closeChildModal">✕</button>
+          </div>
+          <form id="childForm">
+            <input type="hidden" id="childId">
+            <label>Vorname</label>
+            <input id="childFirst" required>
+            <label>Nachname</label>
+            <input id="childLast" required>
+            <label>1. Training – Datum</label>
+            <input id="firstDate" type="date" required>
+            <div class="two">
+              <div><label>Von</label><input id="firstFrom" type="time" required></div>
+              <div><label>Bis</label><input id="firstTo" type="time" required></div>
+            </div>
+            <label class="checkline"><input id="registered" type="checkbox"> Ja – bereits angemeldet</label>
+            <div class="modal-actions">
+              <button type="button" class="secondary" id="cancelChild">Abbrechen</button>
+              <button type="submit" class="primary">Speichern</button>
+            </div>
+            <div id="childError" class="error hidden"></div>
+          </form>
+        </div>
+      </div>
+
+      <div id="confirmModal" class="modal hidden">
+        <div class="modal-card">
+          <div class="modal-head">
+            <h2 id="confirmTitle">Training bestätigen</h2>
+            <button class="icon-btn" id="closeConfirmModal">✕</button>
+          </div>
+          <form id="confirmForm">
+            <input type="hidden" id="confirmTrainingId">
+            <input type="hidden" id="confirmTrainingNumber">
+            <p id="confirmInfo" class="muted"></p>
+            <label>Datum</label>
+            <input id="confirmDate" type="date" required>
+            <div class="two">
+              <div><label>Von</label><input id="confirmFrom" type="time" required></div>
+              <div><label>Bis</label><input id="confirmTo" type="time" required></div>
+            </div>
+            <div class="modal-actions">
+              <button type="button" class="secondary" id="cancelConfirm">Abbrechen</button>
+              <button type="submit" class="primary" id="confirmSubmitBtn">Bestätigen</button>
+            </div>
+            <div id="confirmError" class="error hidden"></div>
+          </form>
+        </div>
+      </div>
+
+      <div id="arbeitszeit" class="section hidden">
+        <div class="stats" id="workStats">
+          <div class="stat"><strong id="workTotalHours">0:00 h</strong><span>Gesamtstunden</span></div>
+          <div class="stat"><strong id="workDays">0</strong><span>Arbeitstage</span></div>
+          <div class="stat"><strong id="workMonthHours">0:00 h</strong><span>Dieser Monat · alle Benutzer</span></div>
+          <div class="stat"><strong id="workAverage">0:00 h</strong><span>Ø pro Arbeitstag</span></div>
+        </div>
+
+        <div class="toolbar">
+          <button id="addWorkBtn" class="primary small">+ Arbeitszeit hinzufügen</button>
+          <button id="workPdfBtn" class="secondary small">📄 PDF speichern</button>
+          <input id="workSearch" class="search" type="month">
+          <span class="badge gray">Alle Arbeitszeiten sichtbar</span>
+          <select id="workSort" class="sort">
+            <option value="newest">Neueste zuerst</option>
+            <option value="oldest">Älteste zuerst</option>
+          </select>
+        </div>
+
+        <div id="workList"></div>
+      </div>
+
+      <div id="workModal" class="modal hidden">
+        <div class="modal-card">
+          <div class="modal-head">
+            <h2 id="workModalTitle">Arbeitszeit hinzufügen</h2>
+            <button class="icon-btn" id="closeWorkModal">✕</button>
+          </div>
+          <form id="workForm">
+            <input type="hidden" id="workId">
+            <label>Benutzer</label>
+            <input id="workUserDisplay" value="Emely" readonly style="background:#f3f4f6;">
+            <input type="hidden" id="workUser">
+            <label>Datum</label>
+            <input id="workDate" type="date" required>
+            <div class="two">
+              <div><label>Beginn</label><input id="workFrom" type="time" required></div>
+              <div><label>Ende</label><input id="workTo" type="time" required></div>
+            </div>
+            <label>Pause in Minuten</label>
+            <input id="workBreak" type="number" min="0" value="0" required>
+            <label>Arbeitsumfang</label>
+            <input id="workNote" placeholder="z. B. Erstellung Winterplan">
+            <div class="modal-actions">
+              <button type="button" class="secondary" id="cancelWork">Abbrechen</button>
+              <button type="submit" class="primary">Speichern</button>
+            </div>
+            <div id="workError" class="error hidden"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+</section>
+
+<script>
+  const SUPABASE_URL = "https://fnzozxrwvhuowfvoajux.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_XkUafNrQtIEJXopYBogFvQ_yKl8Wc__";
+
+  const supabaseClient = supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
+  );
+
+  const loginScreen = document.getElementById("loginScreen");
+  const app = document.getElementById("app");
+  const loginForm = document.getElementById("loginForm");
+  const loginError = document.getElementById("loginError");
+  const currentUser = document.getElementById("currentUser");
+  const pageTitle = document.getElementById("pageTitle");
+
+  async function getEmailForUsername(username) {
+    const { data, error } = await supabaseClient.rpc(
+      "get_login_email",
+      { p_username: username }
+    );
+
+    if (error) throw error;
+    return data;
+  }
+
+  async function showApp() {
+    const { data, error } = await supabaseClient.auth.getUser();
+    if (error) throw error;
+    if (!data.user) return;
+
+    const { data: profile, error: profileError } = await supabaseClient
+      .from("profiles")
+      .select("vorname, nachname, username")
+      .eq("id", data.user.id)
+      .single();
+
+    if (profileError) {
+      console.warn("MINE Profil konnte nicht geladen werden:", profileError);
+    }
+
+    currentUser.textContent =
+      profile?.username || profile?.vorname || "Benutzer";
+
+    loginScreen.classList.add("hidden");
+    app.classList.remove("hidden");
+
+    window.currentAuthUserId = data.user.id;
+
+    try {
+      await loadTrainingData();
+    } catch (e) {
+      console.error("MINE Schnuppertraining laden:", e);
+      const list = document.getElementById("childrenList");
+      if (list) list.innerHTML = '<div class="empty">Schnuppertraining konnte nicht geladen werden.</div>';
+    }
+
+    try {
+      await loadWorkData();
+    } catch (e) {
+      console.error("MINE Arbeitszeiten laden:", e);
+      const list = document.getElementById("workList");
+      if (list) list.innerHTML = '<div class="empty">Arbeitszeiten konnten nicht geladen werden.</div>';
+    }
+  }
+
+  loginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    loginError.classList.add("hidden");
+
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+
+    try {
+      const email = await getEmailForUsername(username);
+
+      if (!email) {
+        throw new Error("Benutzername oder Passwort ist falsch.");
+      }
+
+      const { error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) throw error;
+
+      await showApp();
+      loginForm.reset();
+    } catch (error) {
+      loginError.textContent = "Benutzername oder Passwort ist falsch.";
+      loginError.classList.remove("hidden");
+    }
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", async () => {
+    await supabaseClient.auth.signOut();
+    app.classList.add("hidden");
+    loginScreen.classList.remove("hidden");
+    currentUser.textContent = "Benutzer";
+  });
+
+  document.querySelectorAll("nav button[data-section]").forEach(button => {
+    button.addEventListener("click", () => {
+      const target = button.dataset.section;
+
+      document.querySelectorAll(".section").forEach(section => {
+        section.classList.add("hidden");
+      });
+
+      document.getElementById(target).classList.remove("hidden");
+
+      document.querySelectorAll("nav button[data-section]").forEach(btn => {
+        btn.classList.remove("active");
+      });
+      button.classList.add("active");
+
+      const titles = {
+        dashboard: "Übersicht",
+        schnupper: "Schnuppertraining",
+        arbeitszeit: "Arbeitszeiten"
+      };
+      pageTitle.textContent = titles[target];
+    });
+  });
+
+  const childrenList = document.getElementById("childrenList");
+  const childModal = document.getElementById("childModal");
+  const confirmModal = document.getElementById("confirmModal");
+  let childrenCache = [];
+  let trainingsCache = [];
+
+  function fmtDate(date) {
+    if (!date) return "-";
+    return new Date(date + "T00:00:00").toLocaleDateString("de-DE");
+  }
+  function fmtTime(t) { return t ? t.slice(0,5) : "-"; }
+  function addDays(dateStr, days) {
+    const d = new Date(dateStr + "T00:00:00");
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0,10);
+  }
+  function statusFor(child) {
+    const ts = trainingsCache.filter(t => t.kind_id === child.id);
+    const confirmed = ts.filter(t => t.bestaetigt).length;
+    if (confirmed >= 2) return {text:"2/2", cls:"green"};
+    if (confirmed === 1) return {text:"1/2", cls:"orange"};
+    return {text:"0/2", cls:"blue"};
+  }
+  function trainingFor(childId, number) {
+    return trainingsCache.find(t => t.kind_id === childId && t.training_nummer === number);
+  }
+
+  async function loadTrainingData() {
+    const [childrenRes, trainingsRes] = await Promise.all([
+      supabaseClient.from("kinder").select("*").order("created_at", {ascending:false}),
+      supabaseClient.from("schnuppertrainings").select("*").order("datum", {ascending:true})
+    ]);
+    if (childrenRes.error) throw childrenRes.error;
+    if (trainingsRes.error) throw trainingsRes.error;
+    childrenCache = childrenRes.data || [];
+    trainingsCache = trainingsRes.data || [];
+    renderChildren();
+  }
+
+  function renderChildren() {
+    const q = document.getElementById("childSearch").value.trim().toLowerCase();
+    const sort = document.getElementById("childSort").value;
+    let rows = childrenCache.filter(c => `${c.vorname} ${c.nachname}`.toLowerCase().includes(q));
+
+    rows.sort((a,b) => {
+      if (sort === "child") return `${a.nachname}${a.vorname}`.localeCompare(`${b.nachname}${b.vorname}`, "de");
+      if (sort === "first") return (trainingFor(a.id,1)?.datum || "9999").localeCompare(trainingFor(b.id,1)?.datum || "9999");
+      if (sort === "second") return (trainingFor(a.id,2)?.datum || "9999").localeCompare(trainingFor(b.id,2)?.datum || "9999");
+      if (sort === "registration") return Number(b.angemeldet) - Number(a.angemeldet);
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+
+    document.getElementById("statKinder").textContent = childrenCache.length;
+    document.getElementById("statMoeglich").textContent = childrenCache.filter(c => statusFor(c).text !== "2/2").length;
+    document.getElementById("statZwei").textContent = childrenCache.filter(c => statusFor(c).text === "2/2").length;
+    document.getElementById("statAnmeldungen").textContent = childrenCache.filter(c => c.angemeldet).length;
+
+    if (!rows.length) {
+      childrenList.innerHTML = `<div class="empty">Noch keine Kinder vorhanden.</div>`;
+      return;
+    }
+
+    childrenList.innerHTML = rows.map(child => {
+      const s = statusFor(child);
+      const t1 = trainingFor(child.id,1);
+      const t2 = trainingFor(child.id,2);
+      const trainingHtml = (t, num) => {
+        if (!t) return `<div class="training-box"><h4>${num}. Training</h4><p>Noch nicht geplant</p></div>`;
+        return `<div class="training-box">
+          <h4>${num}. Training ${t.bestaetigt ? '<span class="badge green">bestätigt</span>' : '<span class="badge blue">geplant</span>'}</h4>
+          <p>📅 ${fmtDate(t.datum)} · ${fmtTime(t.von)}–${fmtTime(t.bis)}</p>
+          ${!t.bestaetigt ? `<div class="actions"><button class="secondary" onclick="confirmTraining('${t.id}')">✓ Bestätigen</button></div>` : ''}
+          ${t.bestaetigt && num === 2 ? `<div class="actions"><button class="secondary" onclick="undoTrainingConfirmation('${t.id}')">↩️ Bestätigung zurücknehmen</button></div>` : ''}
+          ${num === 2 ? `<div class="actions"><button class="secondary" onclick="editTraining('${t.id}')">✏️ Bearbeiten</button></div>` : ''}
+        </div>`;
+      };
+      return `<div class="child-card">
+        <div class="child-head">
+          <div class="child-name">${escapeHtml(child.vorname)} ${escapeHtml(child.nachname)}</div>
+          <div>
+            <span class="badge ${s.cls}">${s.text}</span>
+            ${child.angemeldet ? '<span class="badge green">angemeldet</span>' : '<span class="badge gray">nicht angemeldet</span>'}
+          </div>
+        </div>
+        <div class="training-grid">${trainingHtml(t1,1)}${trainingHtml(t2,2)}</div>
+        ${t1 ? `<p class="muted" style="margin:12px 0 0;">⏳ Frist für das zweite Training: <strong>${fmtDate(addDays(t1.datum, 14))}</strong></p>` : ''}
+        <div class="actions">
+          <button class="secondary" onclick="editChild('${child.id}')">✏️ Kind bearbeiten</button>
+          <button class="danger" onclick="deleteChild('${child.id}')">🗑️ Löschen</button>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  function escapeHtml(v) {
+    return String(v ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  }
+
+  function openChildModal(child=null) {
+    document.getElementById("childModalTitle").textContent = child ? "Kind bearbeiten" : "Kind hinzufügen";
+    document.getElementById("childId").value = child?.id || "";
+    document.getElementById("childFirst").value = child?.vorname || "";
+    document.getElementById("childLast").value = child?.nachname || "";
+    document.getElementById("registered").checked = !!child?.angemeldet;
+    const t1 = child ? trainingFor(child.id,1) : null;
+    document.getElementById("firstDate").value = t1?.datum || "";
+    document.getElementById("firstFrom").value = t1?.von?.slice(0,5) || "";
+    document.getElementById("firstTo").value = t1?.bis?.slice(0,5) || "";
+    document.getElementById("childError").classList.add("hidden");
+    childModal.classList.remove("hidden");
+  }
+  function closeChildModal() { childModal.classList.add("hidden"); }
+
+  document.getElementById("addChildBtn").onclick = () => openChildModal();
+  document.getElementById("closeChildModal").onclick = closeChildModal;
+  document.getElementById("cancelChild").onclick = closeChildModal;
+  document.getElementById("childSearch").oninput = renderChildren;
+  document.getElementById("childSort").onchange = renderChildren;
+
+  document.getElementById("childForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const id = document.getElementById("childId").value;
+    const vorname = document.getElementById("childFirst").value.trim();
+    const nachname = document.getElementById("childLast").value.trim();
+    const datum = document.getElementById("firstDate").value;
+    const von = document.getElementById("firstFrom").value;
+    const bis = document.getElementById("firstTo").value;
+    const angemeldet = document.getElementById("registered").checked;
+    const err = document.getElementById("childError");
+    err.classList.add("hidden");
+
+    try {
+      if (!id) {
+        const { data: userData } = await supabaseClient.auth.getUser();
+        const { data: child, error: ce } = await supabaseClient.from("kinder").insert({
+          vorname, nachname, angemeldet, created_by: userData.user?.id || null
+        }).select().single();
+        if (ce) throw ce;
+        const { error: te } = await supabaseClient.from("schnuppertrainings").insert({
+          kind_id: child.id, training_nummer:1, datum, von, bis, bestaetigt:false,
+          created_by:userData.user?.id || null
+        });
+        if (te) throw te;
+        const secondDate = addDays(datum, 7);
+        const { error: te2 } = await supabaseClient.from("schnuppertrainings").insert({
+          kind_id: child.id, training_nummer:2, datum:secondDate, von, bis, bestaetigt:false,
+          created_by:userData.user?.id || null
+        });
+        if (te2) throw te2;
+      } else {
+        const { error: ce } = await supabaseClient.from("kinder").update({vorname,nachname,angemeldet}).eq("id",id);
+        if (ce) throw ce;
+        const t1 = trainingFor(id,1);
+        if (t1) {
+          const { error: te } = await supabaseClient.from("schnuppertrainings").update({datum,von,bis}).eq("id",t1.id);
+          if (te) throw te;
+        }
+      }
+      closeChildModal();
+      await loadTrainingData();
+    } catch (e) {
+      console.error("MINE Kinder speichern:", e);
+      if ((e.message || "").toLowerCase().includes("permission denied")) {
+        err.textContent = "Supabase blockiert den Zugriff auf die Tabelle „kinder“. Bitte die MINE-Datenbankberechtigungen einmal aktualisieren.";
+      } else {
+        err.textContent = e.message || "Speichern fehlgeschlagen.";
+      }
+      err.classList.remove("hidden");
+    }
+  };
+
+  window.editChild = id => openChildModal(childrenCache.find(c => c.id === id));
+
+  window.deleteChild = async id => {
+    const c = childrenCache.find(x => x.id === id);
+    if (!c || !confirm(`"${c.vorname} ${c.nachname}" wirklich löschen?`)) return;
+    const { error } = await supabaseClient.from("kinder").delete().eq("id",id);
+    if (error) alert(error.message);
+    else await loadTrainingData();
+  };
+
+  window.confirmTraining = id => {
+    const t = trainingsCache.find(x => x.id === id);
+    const c = childrenCache.find(x => x.id === t.kind_id);
+    document.getElementById("confirmTitle").textContent = `${t.training_nummer}. Training bestätigen`;
+    updateConfirmButtonLabel("Bestätigen");
+    document.getElementById("confirmInfo").textContent = `${c.vorname} ${c.nachname}`;
+    document.getElementById("confirmTrainingId").value = id;
+    document.getElementById("confirmTrainingNumber").value = t.training_nummer;
+    document.getElementById("confirmDate").value = t.datum;
+    document.getElementById("confirmFrom").value = t.von.slice(0,5);
+    document.getElementById("confirmTo").value = t.bis.slice(0,5);
+    document.getElementById("confirmError").classList.add("hidden");
+    confirmModal.classList.remove("hidden");
+  };
+
+  window.undoTrainingConfirmation = async id => {
+    const t = trainingsCache.find(x => x.id === id);
+    if (!t) return;
+
+    const c = childrenCache.find(x => x.id === t.kind_id);
+    const name = c ? `${c.vorname} ${c.nachname}` : "diesem Kind";
+
+    if (!confirm(`Die Bestätigung für das 2. Training von ${name} wirklich zurücknehmen?`)) {
+      return;
+    }
+
+    const { error } = await supabaseClient
+      .from("schnuppertrainings")
+      .update({ bestaetigt: false })
+      .eq("id", id);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await loadTrainingData();
+  };
+
+  window.editTraining = id => {
+    const t = trainingsCache.find(x => x.id === id);
+    const c = childrenCache.find(x => x.id === t.kind_id);
+    document.getElementById("confirmTitle").textContent = `${t.training_nummer}. Training bearbeiten`;
+    updateConfirmButtonLabel("Speichern");
+    document.getElementById("confirmInfo").textContent = `${c.vorname} ${c.nachname} – Änderungen speichern`;
+    document.getElementById("confirmTrainingId").value = id;
+    document.getElementById("confirmTrainingNumber").value = t.training_nummer;
+    document.getElementById("confirmDate").value = t.datum;
+    document.getElementById("confirmFrom").value = t.von.slice(0,5);
+    document.getElementById("confirmTo").value = t.bis.slice(0,5);
+    document.getElementById("confirmError").classList.add("hidden");
+    confirmModal.classList.remove("hidden");
+  };
+
+  function updateConfirmButtonLabel(label) {
+    document.getElementById("confirmSubmitBtn").textContent = label;
+  }
+
+  const originalConfirmTraining = window.confirmTraining;
+
+  document.getElementById("closeConfirmModal").onclick = () => confirmModal.classList.add("hidden");
+  document.getElementById("cancelConfirm").onclick = () => confirmModal.classList.add("hidden");
+
+  document.getElementById("confirmForm").onsubmit = async e => {
+    e.preventDefault();
+    const id = document.getElementById("confirmTrainingId").value;
+    const trainingNumber = Number(document.getElementById("confirmTrainingNumber").value);
+    const datum = document.getElementById("confirmDate").value;
+    const von = document.getElementById("confirmFrom").value;
+    const bis = document.getElementById("confirmTo").value;
+    const err = document.getElementById("confirmError");
+    err.classList.add("hidden");
+
+    if (bis <= von) {
+      err.textContent = "Die Bis-Zeit muss nach der Von-Zeit liegen.";
+      err.classList.remove("hidden");
+      return;
+    }
+
+    const current = trainingsCache.find(x => x.id === id);
+    const shouldConfirm = !current?.bestaetigt;
+
+    const { error } = await supabaseClient.from("schnuppertrainings").update({
+      datum, von, bis,
+      bestaetigt: shouldConfirm ? true : current.bestaetigt
+    }).eq("id",id);
+
+    if (error) {
+      err.textContent = error.message;
+      err.classList.remove("hidden");
+      return;
+    }
+
+    // If the second training was moved, keep the 14-day deadline based on
+    // the original first training date, not the new second-training date.
+    if (trainingNumber === 1) {
+      const second = trainingsCache.find(x => x.kind_id === current.kind_id && x.training_nummer === 2);
+      if (second && !second.bestaetigt) {
+        await supabaseClient.from("schnuppertrainings")
+          .update({ von, bis, datum: addDays(datum, 7) })
+          .eq("id", second.id);
+      }
+    }
+
+    confirmModal.classList.add("hidden");
+    await loadTrainingData();
+  };
+
+
+  // Komfortfunktion für die Uhrzeit:
+  // "Von" bekommt beim ersten Öffnen die aktuelle Uhrzeit.
+  // "Bis" bekommt automatisch +1 Stunde zur Von-Zeit.
+  function currentTimeValue() {
+    const now = new Date();
+    return String(now.getHours()).padStart(2, "0") + ":" +
+           String(now.getMinutes()).padStart(2, "0");
+  }
+
+  function plusOneHour(timeValue) {
+    if (!timeValue) return currentTimeValue();
+    const [hours, minutes] = timeValue.split(":").map(Number);
+    const total = (hours * 60 + minutes + 60) % (24 * 60);
+    return String(Math.floor(total / 60)).padStart(2, "0") + ":" +
+           String(total % 60).padStart(2, "0");
+  }
+
+  const firstFromInput = document.getElementById("firstFrom");
+  const firstToInput = document.getElementById("firstTo");
+
+  firstFromInput.addEventListener("focus", () => {
+    // Nur automatisch setzen, wenn noch keine Von-Zeit eingetragen wurde.
+    if (!firstFromInput.value) {
+      firstFromInput.value = currentTimeValue();
+    }
+  });
+
+  firstToInput.addEventListener("focus", () => {
+    // Wenn Von vorhanden ist, wird Bis automatisch auf Von + 1 Stunde gesetzt.
+    // Ist Von noch leer, wird die aktuelle Uhrzeit als Ausgangspunkt genommen.
+    if (!firstToInput.value) {
+      firstToInput.value = plusOneHour(firstFromInput.value);
+    }
+  });
+
+
+  let workCache = [];
+  let profilesCache = [];
+
+  function durationMinutes(from, to, pause) {
+    const [fh,fm] = from.split(":").map(Number);
+    const [th,tm] = to.split(":").map(Number);
+    return (th*60+tm) - (fh*60+fm) - Number(pause || 0);
+  }
+  function durationText(minutes) {
+    if (minutes < 0) return "0:00 h";
+    return `${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,"0")} h`;
+  }
+
+
+  document.getElementById("workPdfBtn").onclick = function() {
+    const month = document.getElementById("workSearch").value;
+    const rows = workCache.filter(w => !month || w.datum.startsWith(month));
+
+    if (!rows.length) {
+      alert("Für den ausgewählten Zeitraum sind keine Arbeitszeiten vorhanden.");
+      return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+
+    const title = month
+      ? `MINE – Arbeitszeiten ${month.split("-")[1]}/${month.split("-")[0]}`
+      : "MINE – Arbeitszeiten";
+
+    doc.setFontSize(20);
+    doc.text(title, 15, 18);
+
+    doc.setFontSize(10);
+    doc.text(`Erstellt am ${new Date().toLocaleDateString("de-DE")}`, 15, 25);
+
+    let y = 36;
+    const x = [15, 45, 78, 135, 175, 225];
+
+    doc.setFontSize(10);
+    doc.setFont(undefined, "bold");
+    doc.text("Datum", x[0], y);
+    doc.text("Uhrzeit", x[1], y);
+    doc.text("Arbeitsumfang", x[2], y);
+    doc.text("Pause", x[3], y);
+    doc.text("Arbeitszeit", x[4], y);
+    doc.text("Benutzer", x[5], y);
+
+    doc.setFont(undefined, "normal");
+    y += 7;
+
+    let totalMinutes = 0;
+
+    rows.forEach(w => {
+      const minutes = durationMinutes(w.beginn, w.ende, w.pause_minuten);
+      totalMinutes += minutes;
+      const profile = profilesCache.find(p => p.id === w.user_id);
+      const name = profile?.vorname || profile?.username || "Benutzer";
+
+      const workload = w.notiz || "–";
+      const line = [
+        fmtDate(w.datum),
+        `${fmtTime(w.beginn)}–${fmtTime(w.ende)}`,
+        workload.length > 38 ? workload.slice(0, 35) + "..." : workload,
+        `${w.pause_minuten} Min`,
+        durationText(minutes),
+        name
+      ];
+
+      doc.text(line[0], x[0], y);
+      doc.text(line[1], x[1], y);
+      doc.text(line[2], x[2], y);
+      doc.text(line[3], x[3], y);
+      doc.text(line[4], x[4], y);
+      doc.text(line[5], x[5], y);
+
+      y += 7;
+
+      if (y > 190) {
+        doc.addPage();
+        y = 20;
+      }
+    });
+
+    y += 5;
+    doc.setFont(undefined, "bold");
+    doc.text(`Gesamt: ${durationText(totalMinutes)}`, 15, y);
+
+    const fileName = month
+      ? `MINE_Arbeitszeiten_${month}.pdf`
+      : `MINE_Arbeitszeiten.pdf`;
+
+    doc.save(fileName);
+  };
+
+  async function loadWorkData() {
+    const [workRes, profileRes] = await Promise.all([
+      supabaseClient.from("arbeitszeiten").select("*").order("datum", {ascending:false}),
+      supabaseClient.from("profiles").select("id, vorname, nachname, username").order("vorname")
+    ]);
+    if (workRes.error) throw workRes.error;
+    if (profileRes.error) throw profileRes.error;
+    workCache = workRes.data || [];
+    profilesCache = profileRes.data || [];
+    populateWorkMonths();
+    renderWork();
+  }
+
+  function populateWorkMonths() {
+    const select = document.getElementById("workSearch");
+    if (!select) return;
+
+    const previous = select.value;
+    const monthNames = [
+      "Januar", "Februar", "März", "April", "Mai", "Juni",
+      "Juli", "August", "September", "Oktober", "November", "Dezember"
+    ];
+
+    const months = [...new Set(
+      workCache
+        .filter(w => w.datum && /^\\d{4}-\\d{2}-\\d{2}$/.test(w.datum))
+        .map(w => w.datum.slice(0, 7))
+    )].sort((a, b) => b.localeCompare(a));
+
+    select.innerHTML = '<option value="">Alle Monate</option>';
+
+    months.forEach(value => {
+      const [year, month] = value.split("-").map(Number);
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = `${monthNames[month - 1]} ${year}`;
+      select.appendChild(option);
+    });
+
+    if (previous && months.includes(previous)) {
+      select.value = previous;
+    } else if (months.length) {
+      select.value = months[0];
+    } else {
+      select.value = "";
+    }
+  }
+
+  function renderWork() {
+    const month = document.getElementById("workSearch").value;
+    const sort = document.getElementById("workSort").value;
+
+    let rows = workCache.filter(w => {
+      return !month || w.datum.startsWith(month);
+    });
+
+    rows.sort((a,b) => {
+      const cmp = a.datum.localeCompare(b.datum);
+      return sort === "oldest" ? cmp : -cmp;
+    });
+
+    const total = rows.reduce((sum,w) => sum + durationMinutes(w.beginn,w.ende,w.pause_minuten), 0);
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+    const monthRows = workCache.filter(w => w.datum.startsWith(currentMonth));
+    const monthTotal = monthRows.reduce((sum,w) => sum + durationMinutes(w.beginn,w.ende,w.pause_minuten), 0);
+
+    document.getElementById("workTotalHours").textContent = durationText(total);
+    document.getElementById("workDays").textContent = rows.length;
+    document.getElementById("workMonthHours").textContent = durationText(monthTotal);
+    document.getElementById("workAverage").textContent = durationText(rows.length ? Math.round(total/rows.length) : 0);
+
+    const list = document.getElementById("workList");
+    if (!rows.length) {
+      list.innerHTML = '<div class="empty">Noch keine Arbeitszeiten vorhanden.</div>';
+      return;
+    }
+
+    list.innerHTML = rows.map(w => {
+      const p = profilesCache.find(x => x.id === w.user_id);
+      const name = p?.vorname || p?.username || "Benutzer";
+      const mins = durationMinutes(w.beginn,w.ende,w.pause_minuten);
+      return `<div class="child-card">
+        <div class="work-row">
+          <div class="work-cell">
+            <span class="work-label">Datum</span>
+            <strong>${fmtDate(w.datum)}</strong>
+          </div>
+          <div class="work-cell">
+            <span class="work-label">Uhrzeit</span>
+            <strong>${fmtTime(w.beginn)}–${fmtTime(w.ende)}</strong>
+            <span class="muted">${w.pause_minuten} Min Pause · ${durationText(mins)}</span>
+          </div>
+          <div class="work-cell work-scope">
+            <span class="work-label">Arbeitsumfang</span>
+            <strong>${w.notiz ? escapeHtml(w.notiz) : "–"}</strong>
+          </div>
+        </div>
+        <div class="work-user">${escapeHtml(name)}</div>
+        <div class="actions">
+          <button class="secondary" onclick="editWork('${w.id}')">✏️ Bearbeiten</button>
+          <button class="danger" onclick="deleteWork('${w.id}')">🗑️ Löschen</button>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  function openWorkModal(work=null) {
+    document.getElementById("workModalTitle").textContent = work ? "Arbeitszeit bearbeiten" : "Arbeitszeit hinzufügen";
+    document.getElementById("workId").value = work?.id || "";
+    const emelyProfile = profilesCache.find(p =>
+      (p.username || "").toLowerCase() === "emely" ||
+      (p.vorname || "").toLowerCase() === "emely"
+    );
+    document.getElementById("workUser").value = work?.user_id || emelyProfile?.id || "";
+    document.getElementById("workDate").value = work?.datum || new Date().toISOString().slice(0,10);
+    document.getElementById("workFrom").value = work?.beginn?.slice(0,5) || currentTimeValue();
+    document.getElementById("workTo").value = work?.ende?.slice(0,5) || plusOneHour(document.getElementById("workFrom").value);
+    document.getElementById("workBreak").value = work?.pause_minuten ?? 0;
+    document.getElementById("workNote").value = work?.notiz || "";
+    document.getElementById("workError").classList.add("hidden");
+    document.getElementById("workModal").classList.remove("hidden");
+  }
+
+  document.getElementById("addWorkBtn").onclick = () => openWorkModal();
+  document.getElementById("closeWorkModal").onclick = () => document.getElementById("workModal").classList.add("hidden");
+  document.getElementById("cancelWork").onclick = () => document.getElementById("workModal").classList.add("hidden");
+  document.getElementById("workSearch").onchange = renderWork;
+  document.getElementById("workSort").onchange = renderWork;
+
+  document.getElementById("workForm").onsubmit = async e => {
+    e.preventDefault();
+    const id = document.getElementById("workId").value;
+    const user_id = document.getElementById("workUser").value;
+    const datum = document.getElementById("workDate").value;
+    const beginn = document.getElementById("workFrom").value;
+    const ende = document.getElementById("workTo").value;
+    const pause_minuten = Number(document.getElementById("workBreak").value || 0);
+    const notiz = document.getElementById("workNote").value.trim();
+    const err = document.getElementById("workError");
+    err.classList.add("hidden");
+
+    if (ende <= beginn) {
+      err.textContent = "Die Ende-Zeit muss nach der Beginn-Zeit liegen.";
+      err.classList.remove("hidden");
+      return;
+    }
+    if (durationMinutes(beginn, ende, pause_minuten) <= 0) {
+      err.textContent = "Pause darf nicht länger als die Arbeitszeit sein.";
+      err.classList.remove("hidden");
+      return;
+    }
+
+    if (!user_id) {
+      err.textContent = "Emely konnte in den Profilen nicht gefunden werden. Bitte einmal die MINE-Datenbankberechtigung für profiles aktualisieren.";
+      err.classList.remove("hidden");
+      return;
+    }
+
+    const payload = { user_id, datum, beginn, ende, pause_minuten, notiz: notiz || null };
+
+    try {
+      const result = id
+        ? await supabaseClient.from("arbeitszeiten").update(payload).eq("id",id)
+        : await supabaseClient.from("arbeitszeiten").insert(payload);
+
+      if (result.error) throw result.error;
+      document.getElementById("workModal").classList.add("hidden");
+      await loadWorkData();
+    } catch (e) {
+      err.textContent = e.message || "Speichern fehlgeschlagen.";
+      err.classList.remove("hidden");
+    }
+  };
+
+  window.editWork = id => {
+    const w = workCache.find(x => x.id === id);
+    if (w) openWorkModal(w);
+  };
+
+  window.deleteWork = async id => {
+    if (!confirm("Diese Arbeitszeit wirklich löschen?")) return;
+    const { error } = await supabaseClient.from("arbeitszeiten").delete().eq("id",id);
+    if (error) alert(error.message);
+    else await loadWorkData();
+  };
+
+
+
+  async function exportTrainingPDF() {
+    try {
+      if (!window.jspdf?.jsPDF) {
+        alert("Der PDF-Export konnte nicht geladen werden. Bitte die Seite neu öffnen.");
+        return;
+      }
+
+      if (!Array.isArray(trainingCache) || trainingCache.length === 0) {
+        alert("Es sind keine Schnuppertrainings vorhanden.");
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+
+      const grouped = {};
+      trainingCache.forEach(row => {
+        const child = row.kinder || {};
+        const id = row.kind_id;
+        if (!grouped[id]) {
+          grouped[id] = {
+            vorname: child.vorname || "",
+            nachname: child.nachname || "",
+            angemeldet: !!child.angemeldet,
+            deadline: "",
+            first: null,
+            second: null
+          };
+        }
+
+        const item = {
+          datum: row.datum || "",
+          von: row.von || "",
+          bis: row.bis || "",
+          bestaetigt: !!row.bestaetigt
+        };
+
+        if (row.training_nummer === 1) {
+          grouped[id].first = item;
+          if (row.datum) {
+            const d = new Date(row.datum + "T00:00:00");
+            d.setDate(d.getDate() + 14);
+            grouped[id].deadline =
+              String(d.getDate()).padStart(2, "0") + "." +
+              String(d.getMonth() + 1).padStart(2, "0") + "." +
+              d.getFullYear();
+          }
+        } else if (row.training_nummer === 2) {
+          grouped[id].second = item;
+        }
+      });
+
+      const rows = Object.values(grouped).sort((a, b) => {
+        const aa = `${a.nachname} ${a.vorname}`.toLowerCase();
+        const bb = `${b.nachname} ${b.vorname}`.toLowerCase();
+        return aa.localeCompare(bb, "de");
+      });
+
+      const fmtDate = value => {
+        if (!value) return "–";
+        const [y, m, d] = value.split("-");
+        return `${d}.${m}.${y}`;
+      };
+
+      const fmtTime = item => {
+        if (!item) return "–";
+        return `${(item.von || "").slice(0,5)}–${(item.bis || "").slice(0,5)}`;
+      };
+
+      doc.setFontSize(18);
+      doc.text("MINE – Schnuppertraining", 14, 16);
+
+      doc.setFontSize(9);
+      doc.text(`Erstellt am ${new Date().toLocaleDateString("de-DE")}`, 14, 22);
+
+      const columns = [
+        "Kind",
+        "1. Training",
+        "Status",
+        "2. Training",
+        "Status",
+        "Gesamt",
+        "Angemeldet",
+        "Deadline"
+      ];
+
+      const data = rows.map(r => {
+        const count = Number(!!r.first?.bestaetigt) + Number(!!r.second?.bestaetigt);
+        return [
+          `${r.vorname} ${r.nachname}`.trim(),
+          r.first ? `${fmtDate(r.first.datum)} ${fmtTime(r.first)}` : "–",
+          r.first?.bestaetigt ? "Bestätigt" : "Offen",
+          r.second ? `${fmtDate(r.second.datum)} ${fmtTime(r.second)}` : "–",
+          r.second?.bestaetigt ? "Bestätigt" : "Offen",
+          `${count}/2`,
+          r.angemeldet ? "Ja" : "Nein",
+          r.deadline || "–"
+        ];
+      });
+
+      if (typeof doc.autoTable === "function") {
+        doc.autoTable({
+          head: [columns],
+          body: data,
+          startY: 28,
+          styles: { fontSize: 8, cellPadding: 2.2 },
+          headStyles: { fontSize: 8 },
+          margin: { left: 10, right: 10 }
+        });
+      } else {
+        // Simple fallback if the AutoTable plugin is unavailable.
+        let y = 30;
+        doc.setFontSize(7.5);
+        doc.text(columns.join(" | "), 10, y);
+        y += 6;
+        data.forEach(row => {
+          const line = row.join(" | ");
+          const wrapped = doc.splitTextToSize(line, 277);
+          doc.text(wrapped, 10, y);
+          y += wrapped.length * 4.5 + 2;
+          if (y > 190) {
+            doc.addPage();
+            y = 15;
+          }
+        });
+      }
+
+      const filename = `MINE_Schnuppertraining_${new Date().toISOString().slice(0,10)}.pdf`;
+      doc.save(filename);
+    } catch (error) {
+      console.error("MINE PDF Schnuppertraining:", error);
+      alert("Der PDF-Export konnte nicht erstellt werden.");
+    }
+  }
+
+
+  const trainingPdfBtn = document.getElementById("trainingPdfBtn");
+  if (trainingPdfBtn) {
+    trainingPdfBtn.addEventListener("click", exportTrainingPDF);
+  }
+
+
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+      logoutBtn.disabled = true;
+      logoutBtn.textContent = "Abmelden…";
+      const { error } = await supabaseClient.auth.signOut();
+      if (error) {
+        console.error("MINE Logout:", error);
+        alert("Abmelden war nicht möglich. Bitte erneut versuchen.");
+        logoutBtn.disabled = false;
+        logoutBtn.textContent = "🚪 Abmelden";
+      }
+    });
+  }
+
+  supabaseClient.auth.getSession().then(({ data, error }) => {
+    if (error) {
+      console.error("MINE Session konnte nicht geladen werden:", error);
+      return;
+    }
+    if (data?.session) {
+      showApp().catch(error => console.error("MINE Startfehler:", error));
+    }
+  });
+
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_OUT" || !session) {
+      app.classList.add("hidden");
+      loginScreen.classList.remove("hidden");
+      currentUser.textContent = "Benutzer";
+    }
+  });
+
+</script>
+</body>
+</html>
