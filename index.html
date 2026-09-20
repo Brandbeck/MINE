@@ -6,11 +6,11 @@
   <title>MINE</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
     * { box-sizing: border-box; }
     body {
       margin: 0;
+      overflow-x: hidden;
       font-family: Arial, sans-serif;
       background: #f4f6f8;
       color: #1f2937;
@@ -151,6 +151,89 @@
     .card-icon { font-size: 30px; margin-bottom: 10px; }
     .card h2 { margin: 0 0 8px; font-size: 19px; }
     .card p { color: #6b7280; margin: 0; line-height: 1.5; }
+
+    .category-card {
+      background: white;
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.06);
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .category-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 7px 24px rgba(0,0,0,.09);
+    }
+    .category-head {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .category-title {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      font-size:20px;
+      font-weight:800;
+    }
+    .category-arrow {
+      font-size:18px;
+      color:#6b7280;
+      transition: transform .15s ease;
+    }
+    .category-card.open .category-arrow { transform: rotate(180deg); }
+    .category-menu {
+      display:none;
+      margin-top:16px;
+      padding-top:14px;
+      border-top:1px solid #e5e7eb;
+      gap:8px;
+      flex-direction:column;
+    }
+    .category-card.open .category-menu { display:flex; }
+    .category-menu button {
+      width:100%;
+      text-align:left;
+      background:#f3f4f6;
+      color:#1f2937;
+      border:1px solid #e5e7eb;
+    }
+    .category-menu button:hover {
+      background:#e5e7eb;
+    }
+    .category-note {
+      color:#6b7280;
+      font-size:14px;
+      line-height:1.5;
+      margin:12px 0 0;
+    }
+    .sidebar-category {
+      width:100%;
+      text-align:left;
+      background:transparent;
+      color:#d1d5db;
+      margin-bottom:6px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .sidebar-category:hover, .sidebar-category.open {
+      background:#374151;
+      color:white;
+    }
+    .sidebar-submenu {
+      display:none;
+      padding:0 0 6px 12px;
+    }
+    .sidebar-submenu.open { display:block; }
+    .sidebar-submenu button {
+      font-size:14px;
+      color:#cbd5e1;
+      margin-bottom:3px;
+    }
+    .sidebar-submenu button:hover { color:white; background:#374151; }
+
     .placeholder {
       margin-top: 20px;
       background: white;
@@ -160,15 +243,36 @@
     }
 
     @media (max-width: 800px) {
-      #app { display: block; }
-      aside { width: 100%; padding: 14px; }
-      .brand { padding: 4px 8px 12px; }
-      nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-      nav button { margin: 0; text-align: center; }
-      .logout { margin-top: 8px; }
-      main { padding: 18px; }
-      .cards { grid-template-columns: 1fr; }
-      .topbar { align-items: flex-start; flex-direction: column; }
+      html, body { overflow-x: hidden; }
+      #app { display: block; width: 100%; }
+      aside { width: 100%; padding: 14px 12px 16px; }
+      .brand { padding: 2px 6px 12px; font-size: 28px; }
+      nav { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+      nav button { margin: 0; text-align: left; width: 100%; min-height: 46px; }
+      .sidebar-category { justify-content: space-between; }
+      .sidebar-submenu { padding: 0 0 4px 12px; }
+      .sidebar-submenu button { min-height: 42px; }
+      .logout { margin-top: 10px; min-height: 46px; }
+      main { width: 100%; max-width: none; padding: 18px 14px 30px; }
+      .topbar { align-items: flex-start; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+      .topbar h1 { font-size: 28px; }
+      .user-pill { align-self: flex-start; }
+      .cards { grid-template-columns: 1fr; gap: 12px; }
+      .category-card { padding: 18px; }
+      .stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .stat { padding: 13px; }
+      .stat strong { font-size: 22px; }
+      .toolbar { flex-direction: column; align-items: stretch; }
+      .toolbar > * { width: 100% !important; min-width: 0 !important; }
+      .toolbar .small { width: 100% !important; }
+      .search, .sort { width: 100%; }
+      .child-card { padding: 15px; }
+      .training-grid { grid-template-columns: 1fr; }
+      .actions button { width: 100%; }
+      .work-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .work-scope { grid-column: 1 / -1; }
+      .modal { padding: 10px; align-items: flex-end; }
+      .modal-card { max-height: 90vh; padding: 18px; border-radius: 18px 18px 0 0; }
     }
 
     .stats {
@@ -293,8 +397,21 @@
     <div class="brand">MINE</div>
     <nav>
       <button class="active" data-section="dashboard">🏠 Übersicht</button>
-      <button data-section="schnupper">🎾 Schnuppertraining</button>
-      <button data-section="arbeitszeit">⏱️ Arbeitszeiten</button>
+
+      <button type="button" class="sidebar-category" data-category="tennis">
+        <span>🎾 Tennis</span><span>⌄</span>
+      </button>
+      <div class="sidebar-submenu" id="sidebarTennisMenu">
+        <button type="button" data-section="schnupper">👦 Schnupperkinder</button>
+        <button type="button" data-section="arbeitszeit">⏱️ Arbeitszeiten</button>
+      </div>
+
+      <button type="button" class="sidebar-category" data-category="privat">
+        <span>🔒 Privat</span><span>⌄</span>
+      </button>
+      <div class="sidebar-submenu" id="sidebarPrivatMenu">
+        <div style="color:#9ca3af;font-size:13px;padding:5px 8px 10px;">Noch keine Bereiche</div>
+      </div>
     </nav>
     <button id="logoutBtn" class="logout">Abmelden</button>
   </aside>
@@ -308,16 +425,27 @@
     <div id="content">
       <div id="dashboard" class="section">
         <div class="cards">
-          <div class="card">
-            <div class="card-icon">🎾</div>
-            <h2>Schnuppertraining</h2>
-          <button id="trainingPdfBtn" type="button" class="secondary" style="margin-top:10px;">📄 PDF speichern</button>
-            <p>Verwalte Kinder, Trainings und Anmeldungen.</p>
+          <div class="category-card" data-category-card="tennis" tabindex="0" role="button" aria-expanded="false">
+            <div class="category-head">
+              <div class="category-title"><span>🎾</span><span>Tennis</span></div>
+              <span class="category-arrow">⌄</span>
+            </div>
+            <p class="category-note">Schnupperkinder und Arbeitszeiten</p>
+            <div class="category-menu">
+              <button type="button" data-section="schnupper">👦 Schnupperkinder</button>
+              <button type="button" data-section="arbeitszeit">⏱️ Arbeitszeiten</button>
+            </div>
           </div>
-          <div class="card">
-            <div class="card-icon">⏱️</div>
-            <h2>Arbeitszeiten</h2>
-            <p>Arbeitszeiten erfassen und später auswerten.</p>
+
+          <div class="category-card" data-category-card="privat" tabindex="0" role="button" aria-expanded="false">
+            <div class="category-head">
+              <div class="category-title"><span>🔒</span><span>Privat</span></div>
+              <span class="category-arrow">⌄</span>
+            </div>
+            <p class="category-note">Noch keine Bereiche angelegt.</p>
+            <div class="category-menu">
+              <div style="color:#6b7280;font-size:14px;">Hier können später private Bereiche ergänzt werden.</div>
+            </div>
           </div>
         </div>
         <div class="placeholder">
@@ -336,6 +464,7 @@
 
         <div class="toolbar">
           <button id="addChildBtn" class="primary small">+ Kind hinzufügen</button>
+          <button id="trainingPdfBtn" class="secondary small" type="button">📄 PDF speichern</button>
           <input id="childSearch" class="search" placeholder="🔎 Kind suchen ...">
           <select id="childSort" class="sort">
             <option value="newest">Neueste zuerst</option>
@@ -559,27 +688,68 @@
     currentUser.textContent = "Benutzer";
   });
 
+  function openSection(target) {
+    document.querySelectorAll(".section").forEach(section => {
+      section.classList.add("hidden");
+    });
+
+    const targetSection = document.getElementById(target);
+    if (targetSection) targetSection.classList.remove("hidden");
+
+    document.querySelectorAll("nav button[data-section]").forEach(btn => {
+      btn.classList.remove("active");
+    });
+
+    document.querySelectorAll(`[data-section="${target}"]`).forEach(btn => {
+      if (btn.closest("nav")) btn.classList.add("active");
+    });
+
+    const titles = {
+      dashboard: "Übersicht",
+      schnupper: "Schnupperkinder",
+      arbeitszeit: "Arbeitszeiten"
+    };
+    pageTitle.textContent = titles[target] || "Übersicht";
+  }
+
   document.querySelectorAll("nav button[data-section]").forEach(button => {
+    button.addEventListener("click", () => openSection(button.dataset.section));
+  });
+
+  document.querySelectorAll("[data-category]").forEach(button => {
     button.addEventListener("click", () => {
-      const target = button.dataset.section;
+      const category = button.dataset.category;
+      const menu = document.getElementById(
+        category === "tennis" ? "sidebarTennisMenu" : "sidebarPrivatMenu"
+      );
+      const isOpen = button.classList.toggle("open");
+      if (menu) menu.classList.toggle("open", isOpen);
+    });
+  });
 
-      document.querySelectorAll(".section").forEach(section => {
-        section.classList.add("hidden");
+  document.querySelectorAll("[data-category-card]").forEach(card => {
+    const toggle = () => {
+      const isOpen = card.classList.toggle("open");
+      card.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    };
+
+    card.addEventListener("click", event => {
+      if (event.target.closest("button")) return;
+      toggle();
+    });
+
+    card.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggle();
+      }
+    });
+
+    card.querySelectorAll("button[data-section]").forEach(button => {
+      button.addEventListener("click", event => {
+        event.stopPropagation();
+        openSection(button.dataset.section);
       });
-
-      document.getElementById(target).classList.remove("hidden");
-
-      document.querySelectorAll("nav button[data-section]").forEach(btn => {
-        btn.classList.remove("active");
-      });
-      button.classList.add("active");
-
-      const titles = {
-        dashboard: "Übersicht",
-        schnupper: "Schnuppertraining",
-        arbeitszeit: "Arbeitszeiten"
-      };
-      pageTitle.textContent = titles[target];
     });
   });
 
@@ -1193,141 +1363,96 @@
 
 
 
+  function loadJsPDF() {
+    if (window.jspdf?.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[data-mine-jspdf]');
+      if (existing) {
+        existing.addEventListener('load', () => window.jspdf?.jsPDF ? resolve(window.jspdf.jsPDF) : reject(new Error('jsPDF konnte nicht geladen werden.')), {once:true});
+        existing.addEventListener('error', () => reject(new Error('jsPDF konnte nicht geladen werden.')), {once:true});
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      script.async = true;
+      script.dataset.mineJspdf = '1';
+      script.onload = () => window.jspdf?.jsPDF ? resolve(window.jspdf.jsPDF) : reject(new Error('jsPDF konnte nicht geladen werden.'));
+      script.onerror = () => reject(new Error('jsPDF konnte nicht geladen werden.'));
+      document.head.appendChild(script);
+    });
+  }
+
   async function exportTrainingPDF() {
     try {
-      if (!window.jspdf?.jsPDF) {
-        alert("Der PDF-Export konnte nicht geladen werden. Bitte die Seite neu öffnen.");
-        return;
-      }
-
+      const jsPDF = await loadJsPDF();
       if (!Array.isArray(trainingCache) || trainingCache.length === 0) {
-        alert("Es sind keine Schnuppertrainings vorhanden.");
+        alert('Es sind keine Schnuppertrainings vorhanden.');
         return;
       }
 
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
       const grouped = {};
       trainingCache.forEach(row => {
         const child = row.kinder || {};
         const id = row.kind_id;
-        if (!grouped[id]) {
-          grouped[id] = {
-            vorname: child.vorname || "",
-            nachname: child.nachname || "",
-            angemeldet: !!child.angemeldet,
-            deadline: "",
-            first: null,
-            second: null
-          };
-        }
-
-        const item = {
-          datum: row.datum || "",
-          von: row.von || "",
-          bis: row.bis || "",
-          bestaetigt: !!row.bestaetigt
-        };
-
+        if (!grouped[id]) grouped[id] = { vorname: child.vorname || '', nachname: child.nachname || '', angemeldet: !!child.angemeldet, deadline: '', first: null, second: null };
+        const item = { datum: row.datum || '', von: row.von || '', bis: row.bis || '', bestaetigt: !!row.bestaetigt };
         if (row.training_nummer === 1) {
           grouped[id].first = item;
           if (row.datum) {
-            const d = new Date(row.datum + "T00:00:00");
+            const d = new Date(row.datum + 'T00:00:00');
             d.setDate(d.getDate() + 14);
-            grouped[id].deadline =
-              String(d.getDate()).padStart(2, "0") + "." +
-              String(d.getMonth() + 1).padStart(2, "0") + "." +
-              d.getFullYear();
+            grouped[id].deadline = `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
           }
-        } else if (row.training_nummer === 2) {
-          grouped[id].second = item;
-        }
+        } else if (row.training_nummer === 2) grouped[id].second = item;
       });
 
-      const rows = Object.values(grouped).sort((a, b) => {
-        const aa = `${a.nachname} ${a.vorname}`.toLowerCase();
-        const bb = `${b.nachname} ${b.vorname}`.toLowerCase();
-        return aa.localeCompare(bb, "de");
-      });
-
-      const fmtDate = value => {
-        if (!value) return "–";
-        const [y, m, d] = value.split("-");
-        return `${d}.${m}.${y}`;
-      };
-
-      const fmtTime = item => {
-        if (!item) return "–";
-        return `${(item.von || "").slice(0,5)}–${(item.bis || "").slice(0,5)}`;
-      };
-
-      doc.setFontSize(18);
-      doc.text("MINE – Schnuppertraining", 14, 16);
-
-      doc.setFontSize(9);
-      doc.text(`Erstellt am ${new Date().toLocaleDateString("de-DE")}`, 14, 22);
-
-      const columns = [
-        "Kind",
-        "1. Training",
-        "Status",
-        "2. Training",
-        "Status",
-        "Gesamt",
-        "Angemeldet",
-        "Deadline"
-      ];
-
+      const rows = Object.values(grouped).sort((a,b) => `${a.nachname} ${a.vorname}`.localeCompare(`${b.nachname} ${b.vorname}`, 'de'));
+      const dateFmt = v => v ? (() => { const [y,m,d]=v.split('-'); return `${d}.${m}.${y}`; })() : '–';
+      const timeFmt = x => x ? `${(x.von||'').slice(0,5)}–${(x.bis||'').slice(0,5)}` : '–';
       const data = rows.map(r => {
         const count = Number(!!r.first?.bestaetigt) + Number(!!r.second?.bestaetigt);
         return [
-          `${r.vorname} ${r.nachname}`.trim(),
-          r.first ? `${fmtDate(r.first.datum)} ${fmtTime(r.first)}` : "–",
-          r.first?.bestaetigt ? "Bestätigt" : "Offen",
-          r.second ? `${fmtDate(r.second.datum)} ${fmtTime(r.second)}` : "–",
-          r.second?.bestaetigt ? "Bestätigt" : "Offen",
-          `${count}/2`,
-          r.angemeldet ? "Ja" : "Nein",
-          r.deadline || "–"
+          `${r.vorname} ${r.nachname}`.trim() || '–',
+          r.first ? `${dateFmt(r.first.datum)} ${timeFmt(r.first)}` : '–',
+          r.first?.bestaetigt ? 'Bestätigt' : 'Offen',
+          r.second ? `${dateFmt(r.second.datum)} ${timeFmt(r.second)}` : '–',
+          r.second?.bestaetigt ? 'Bestätigt' : 'Offen',
+          `${count}/2`, r.angemeldet ? 'Ja' : 'Nein', r.deadline || '–'
         ];
       });
 
-      if (typeof doc.autoTable === "function") {
-        doc.autoTable({
-          head: [columns],
-          body: data,
-          startY: 28,
-          styles: { fontSize: 8, cellPadding: 2.2 },
-          headStyles: { fontSize: 8 },
-          margin: { left: 10, right: 10 }
-        });
-      } else {
-        // Simple fallback if the AutoTable plugin is unavailable.
-        let y = 30;
-        doc.setFontSize(7.5);
-        doc.text(columns.join(" | "), 10, y);
-        y += 6;
-        data.forEach(row => {
-          const line = row.join(" | ");
-          const wrapped = doc.splitTextToSize(line, 277);
-          doc.text(wrapped, 10, y);
-          y += wrapped.length * 4.5 + 2;
-          if (y > 190) {
-            doc.addPage();
-            y = 15;
-          }
-        });
-      }
+      const headers = ['Kind','1. Training','Status','2. Training','Status','Gesamt','Angemeldet','Deadline'];
+      const widths = [45,43,27,43,27,20,28,27];
+      const pageW = 297, left = 8, top = 30, rowH = 7;
+      const drawHeader = y => {
+        doc.setFont(undefined, 'bold'); doc.setFontSize(8);
+        let x = left;
+        headers.forEach((h,i) => { doc.text(h, x + 2, y); x += widths[i]; });
+        doc.setLineWidth(.3); doc.line(left, y+2, pageW-left, y+2);
+        doc.setFont(undefined, 'normal');
+      };
 
-      const filename = `MINE_Schnuppertraining_${new Date().toISOString().slice(0,10)}.pdf`;
-      doc.save(filename);
+      doc.setFontSize(18); doc.text('MINE – Schnuppertraining', left, 15);
+      doc.setFontSize(9); doc.text(`Erstellt am ${new Date().toLocaleDateString('de-DE')}`, left, 21);
+      let y = top; drawHeader(y); y += 8;
+      doc.setFontSize(7.5);
+      data.forEach(row => {
+        if (y > 190) { doc.addPage(); y = 18; drawHeader(y); y += 8; }
+        let x = left;
+        row.forEach((value,i) => {
+          const text = doc.splitTextToSize(String(value), widths[i]-3)[0];
+          doc.text(text, x + 2, y); x += widths[i];
+        });
+        doc.setDrawColor(220); doc.line(left, y+2, pageW-left, y+2); y += rowH;
+      });
+
+      doc.save(`MINE_Schnuppertraining_${new Date().toISOString().slice(0,10)}.pdf`);
     } catch (error) {
-      console.error("MINE PDF Schnuppertraining:", error);
-      alert("Der PDF-Export konnte nicht erstellt werden.");
+      console.error('MINE PDF Schnuppertraining:', error);
+      alert('Der PDF-Export konnte nicht erstellt werden. Bitte prüfe die Internetverbindung und versuche es erneut.');
     }
   }
-
 
   const trainingPdfBtn = document.getElementById("trainingPdfBtn");
   if (trainingPdfBtn) {
