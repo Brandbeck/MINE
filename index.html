@@ -542,7 +542,9 @@
         <div class="toolbar">
           <button id="addWorkBtn" class="primary small">+ Arbeitszeit hinzufügen</button>
           <button id="workPdfBtn" class="secondary small">📄 PDF speichern</button>
-          <input id="workSearch" class="search" type="month">
+          <select id="workSearch" class="search" aria-label="Monat auswählen">
+            <option value="">Alle Monate</option>
+          </select>
           <span class="badge gray">Alle Arbeitszeiten sichtbar</span>
           <select id="workSort" class="sort">
             <option value="newest">Neueste zuerst</option>
@@ -570,8 +572,6 @@
               <div><label>Beginn</label><input id="workFrom" type="time" required></div>
               <div><label>Ende</label><input id="workTo" type="time" required></div>
             </div>
-            <label>Pause in Minuten</label>
-            <input id="workBreak" type="number" min="0" value="0" required>
             <label>Arbeitsumfang</label>
             <input id="workNote" placeholder="z. B. Erstellung Winterplan">
             <div class="modal-actions">
@@ -1081,10 +1081,10 @@
   let workCache = [];
   let profilesCache = [];
 
-  function durationMinutes(from, to, pause) {
+  function durationMinutes(from, to) {
     const [fh,fm] = from.split(":").map(Number);
     const [th,tm] = to.split(":").map(Number);
-    return (th*60+tm) - (fh*60+fm) - Number(pause || 0);
+    return (th*60+tm) - (fh*60+fm);
   }
   function durationText(minutes) {
     if (minutes < 0) return "0:00 h";
@@ -1110,21 +1110,19 @@
 
     doc.setFontSize(20);
     doc.text(title, 15, 18);
-
     doc.setFontSize(10);
     doc.text(`Erstellt am ${new Date().toLocaleDateString("de-DE")}`, 15, 25);
 
     let y = 36;
-    const x = [15, 45, 78, 135, 175, 225];
+    const x = [15, 45, 78, 135, 190];
 
     doc.setFontSize(10);
     doc.setFont(undefined, "bold");
     doc.text("Datum", x[0], y);
     doc.text("Uhrzeit", x[1], y);
     doc.text("Arbeitsumfang", x[2], y);
-    doc.text("Pause", x[3], y);
-    doc.text("Arbeitszeit", x[4], y);
-    doc.text("Benutzer", x[5], y);
+    doc.text("Arbeitszeit", x[3], y);
+    doc.text("Benutzer", x[4], y);
 
     doc.setFont(undefined, "normal");
     y += 7;
@@ -1132,28 +1130,21 @@
     let totalMinutes = 0;
 
     rows.forEach(w => {
-      const minutes = durationMinutes(w.beginn, w.ende, w.pause_minuten);
+      const minutes = durationMinutes(w.beginn, w.ende);
       totalMinutes += minutes;
       const profile = profilesCache.find(p => p.id === w.user_id);
       const name = profile?.vorname || profile?.username || "Benutzer";
-
       const workload = w.notiz || "–";
+
       const line = [
         fmtDate(w.datum),
         `${fmtTime(w.beginn)}–${fmtTime(w.ende)}`,
-        workload.length > 38 ? workload.slice(0, 35) + "..." : workload,
-        `${w.pause_minuten} Min`,
+        workload.length > 42 ? workload.slice(0, 39) + "..." : workload,
         durationText(minutes),
         name
       ];
 
-      doc.text(line[0], x[0], y);
-      doc.text(line[1], x[1], y);
-      doc.text(line[2], x[2], y);
-      doc.text(line[3], x[3], y);
-      doc.text(line[4], x[4], y);
-      doc.text(line[5], x[5], y);
-
+      line.forEach((value, i) => doc.text(String(value), x[i], y));
       y += 7;
 
       if (y > 190) {
@@ -1168,7 +1159,7 @@
 
     const fileName = month
       ? `MINE_Arbeitszeiten_${month}.pdf`
-      : `MINE_Arbeitszeiten.pdf`;
+      : "MINE_Arbeitszeiten.pdf";
 
     doc.save(fileName);
   };
@@ -1234,11 +1225,11 @@
       return sort === "oldest" ? cmp : -cmp;
     });
 
-    const total = rows.reduce((sum,w) => sum + durationMinutes(w.beginn,w.ende,w.pause_minuten), 0);
+    const total = rows.reduce((sum,w) => sum + durationMinutes(w.beginn,w.ende), 0);
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
     const monthRows = workCache.filter(w => w.datum.startsWith(currentMonth));
-    const monthTotal = monthRows.reduce((sum,w) => sum + durationMinutes(w.beginn,w.ende,w.pause_minuten), 0);
+    const monthTotal = monthRows.reduce((sum,w) => sum + durationMinutes(w.beginn,w.ende), 0);
 
     document.getElementById("workTotalHours").textContent = durationText(total);
     document.getElementById("workDays").textContent = rows.length;
@@ -1254,7 +1245,7 @@
     list.innerHTML = rows.map(w => {
       const p = profilesCache.find(x => x.id === w.user_id);
       const name = p?.vorname || p?.username || "Benutzer";
-      const mins = durationMinutes(w.beginn,w.ende,w.pause_minuten);
+      const mins = durationMinutes(w.beginn,w.ende);
       return `<div class="child-card">
         <div class="work-row">
           <div class="work-cell">
@@ -1264,7 +1255,7 @@
           <div class="work-cell">
             <span class="work-label">Uhrzeit</span>
             <strong>${fmtTime(w.beginn)}–${fmtTime(w.ende)}</strong>
-            <span class="muted">${w.pause_minuten} Min Pause · ${durationText(mins)}</span>
+            <span class="muted">${durationText(mins)}</span>
           </div>
           <div class="work-cell work-scope">
             <span class="work-label">Arbeitsumfang</span>
@@ -1291,15 +1282,28 @@
     document.getElementById("workDate").value = work?.datum || new Date().toISOString().slice(0,10);
     document.getElementById("workFrom").value = work?.beginn?.slice(0,5) || currentTimeValue();
     document.getElementById("workTo").value = work?.ende?.slice(0,5) || plusOneHour(document.getElementById("workFrom").value);
-    document.getElementById("workBreak").value = work?.pause_minuten ?? 0;
     document.getElementById("workNote").value = work?.notiz || "";
     document.getElementById("workError").classList.add("hidden");
-    document.getElementById("workModal").classList.remove("hidden");
+    const modal = document.getElementById("workModal");
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+    modal.dataset.scrollY = String(scrollY);
+    document.body.style.top = `-${scrollY}px`;
+    document.body.classList.add("work-modal-open");
+    modal.classList.remove("hidden");
+  }
+
+  function closeWorkModal() {
+    const modal = document.getElementById("workModal");
+    const scrollY = Number(modal.dataset.scrollY || 0);
+    modal.classList.add("hidden");
+    document.body.classList.remove("work-modal-open");
+    document.body.style.top = "";
+    window.scrollTo(0, scrollY);
   }
 
   document.getElementById("addWorkBtn").onclick = () => openWorkModal();
-  document.getElementById("closeWorkModal").onclick = () => document.getElementById("workModal").classList.add("hidden");
-  document.getElementById("cancelWork").onclick = () => document.getElementById("workModal").classList.add("hidden");
+  document.getElementById("closeWorkModal").onclick = closeWorkModal;
+  document.getElementById("cancelWork").onclick = closeWorkModal;
   document.getElementById("workSearch").onchange = renderWork;
   document.getElementById("workSort").onchange = renderWork;
 
@@ -1310,7 +1314,6 @@
     const datum = document.getElementById("workDate").value;
     const beginn = document.getElementById("workFrom").value;
     const ende = document.getElementById("workTo").value;
-    const pause_minuten = Number(document.getElementById("workBreak").value || 0);
     const notiz = document.getElementById("workNote").value.trim();
     const err = document.getElementById("workError");
     err.classList.add("hidden");
@@ -1320,7 +1323,7 @@
       err.classList.remove("hidden");
       return;
     }
-    if (durationMinutes(beginn, ende, pause_minuten) <= 0) {
+    if (durationMinutes(beginn, ende) <= 0) {
       err.textContent = "Pause darf nicht länger als die Arbeitszeit sein.";
       err.classList.remove("hidden");
       return;
@@ -1332,7 +1335,7 @@
       return;
     }
 
-    const payload = { user_id, datum, beginn, ende, pause_minuten, notiz: notiz || null };
+    const payload = { user_id, datum, beginn, ende, notiz: notiz || null };
 
     try {
       const result = id
@@ -1340,7 +1343,7 @@
         : await supabaseClient.from("arbeitszeiten").insert(payload);
 
       if (result.error) throw result.error;
-      document.getElementById("workModal").classList.add("hidden");
+      closeWorkModal();
       await loadWorkData();
     } catch (e) {
       err.textContent = e.message || "Speichern fehlgeschlagen.";
