@@ -370,6 +370,153 @@
       .stats { grid-template-columns:1fr 1fr; }
       .two { grid-template-columns:1fr; }
     }
+  
+    /* ===== MINE – zusätzliche Handy-Optimierung ===== */
+    @media (max-width: 800px) {
+      body { font-size: 15px; }
+      #loginScreen { padding: 14px; }
+      .login-card { padding: 24px 18px; border-radius: 16px; }
+      .logo { font-size: 34px; }
+
+      #app { min-height: 100dvh; }
+      aside {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        padding: 10px 10px 8px;
+        box-shadow: 0 2px 12px rgba(0,0,0,.12);
+      }
+      .brand {
+        text-align: center;
+        padding: 2px 4px 8px;
+        font-size: 24px;
+      }
+      nav { gap: 4px; }
+      nav > button,
+      .sidebar-category {
+        min-height: 42px;
+        padding: 10px 12px;
+        border-radius: 9px;
+        font-size: 14px;
+      }
+      .sidebar-submenu {
+        padding: 0 0 4px 8px;
+      }
+      .sidebar-submenu button {
+        min-height: 40px;
+        padding: 9px 11px;
+        font-size: 14px;
+      }
+      .logout {
+        min-height: 42px;
+        margin-top: 6px;
+      }
+
+      main {
+        padding: 14px 10px 28px;
+      }
+      .topbar {
+        margin-bottom: 14px;
+        gap: 8px;
+      }
+      .topbar h1 { font-size: 24px; }
+      .user-pill {
+        padding: 7px 11px;
+        font-size: 13px;
+      }
+
+      .cards { gap: 10px; }
+      .category-card,
+      .card,
+      .child-card,
+      .placeholder,
+      .stat {
+        border-radius: 13px;
+      }
+      .category-card { padding: 15px; }
+      .category-title { font-size: 18px; }
+      .category-menu { margin-top: 12px; padding-top: 10px; }
+
+      .stats {
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .stat { padding: 12px; }
+      .stat strong { font-size: 21px; }
+      .stat span { font-size: 11px; }
+
+      .toolbar {
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .toolbar button,
+      .toolbar input,
+      .toolbar select {
+        min-height: 44px;
+      }
+
+      .child-card { padding: 13px; margin-bottom: 10px; }
+      .child-head { gap: 8px; }
+      .child-name { font-size: 18px; }
+      .training-grid { gap: 8px; }
+      .training-box { padding: 11px; }
+      .actions { gap: 6px; }
+      .actions button {
+        min-height: 42px;
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+
+      .work-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
+      }
+      .work-cell strong {
+        font-size: 15px;
+      }
+      .work-user {
+        margin-top: 8px;
+      }
+
+      .modal {
+        padding: 0;
+        align-items: flex-end;
+      }
+      .modal-card {
+        width: 100%;
+        max-width: none;
+        max-height: 94dvh;
+        padding: 17px 15px calc(17px + env(safe-area-inset-bottom));
+        border-radius: 18px 18px 0 0;
+      }
+      .modal-actions {
+        position: sticky;
+        bottom: 0;
+        background: white;
+        padding-top: 10px;
+        margin-top: 14px;
+      }
+      .modal-actions button {
+        min-height: 44px;
+      }
+      input, select, button { font-size: 16px; }
+    }
+
+    @media (max-width: 430px) {
+      .stats { grid-template-columns: 1fr 1fr; }
+      .stat strong { font-size: 19px; }
+      .stat span { font-size: 10px; }
+      .work-row { grid-template-columns: 1fr; }
+      .work-scope { grid-column: auto; }
+      .two { grid-template-columns: 1fr; }
+      .modal-head h2 { font-size: 20px; }
+      .actions button { width: 100%; }
+    }
+
+    @media (min-width: 801px) {
+      /* Auf dem PC bleibt das bestehende Desktop-Layout unverändert. */
+    }
+
   </style>
 </head>
 <body>
