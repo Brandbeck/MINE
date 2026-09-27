@@ -864,7 +864,8 @@
 
   function fmtDate(date) {
     if (!date) return "-";
-    return new Date(date + "T00:00:00").toLocaleDateString("de-DE");
+    const [year, month, day] = date.split("-");
+    return `${day.padStart(2, "0")}.${month.padStart(2, "0")}.${year}`;
   }
   function fmtTime(t) { return t ? t.slice(0,5) : "-"; }
   function addDays(dateStr, days) {
@@ -1197,7 +1198,8 @@
 
   document.getElementById("workPdfBtn").onclick = function() {
     const month = document.getElementById("workSearch").value;
-    const rows = workCache.filter(w => !month || w.datum.startsWith(month));
+    const rows = workCache.filter(w => !month || w.datum.startsWith(month))
+      .sort((a, b) => a.datum.localeCompare(b.datum) || a.beginn.localeCompare(b.beginn));
     if (!rows.length) {
       alert("Für den ausgewählten Zeitraum sind keine Arbeitszeiten vorhanden.");
       return;
