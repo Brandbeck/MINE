@@ -1427,10 +1427,10 @@
   });
 
   document.getElementById("workMeetingTemplate").addEventListener("click", () => {
-    // Den nächsten Donnerstag einschließlich heute im lokalen Kalender auswählen.
+    // Donnerstag der aktuellen Woche (Montag bis Sonntag), auch nachträglich wählbar.
     const today = new Date();
-    const daysUntilThursday = (4 - today.getDay() + 7) % 7;
-    const meetingDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + daysUntilThursday);
+    const daysFromMonday = (today.getDay() + 6) % 7;
+    const meetingDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysFromMonday + 3);
     const year = meetingDate.getFullYear();
     const month = String(meetingDate.getMonth() + 1).padStart(2, "0");
     const day = String(meetingDate.getDate()).padStart(2, "0");
