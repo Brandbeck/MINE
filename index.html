@@ -473,6 +473,31 @@
       z-index: 1;
     }
     #workModal .work-picker:focus-within { outline: 2px solid #2563eb; outline-offset: 2px; }
+
+    #workMeetingTemplate {
+      width: 100%;
+      margin: 8px 0 12px;
+      padding: 13px 14px;
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      color: #1e3a8a;
+      border-radius: 12px;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 15px;
+      line-height: 1.35;
+    }
+    #workMeetingTemplate .template-subtitle {
+      display: block;
+      margin-top: 3px;
+      font-size: 13px;
+      font-weight: 400;
+      color: #475569;
+    }
+    #workMeetingTemplate .template-arrow { flex-shrink: 0; font-size: 21px; }
   </style>
 </head>
 <body>
@@ -665,6 +690,13 @@
             <button class="icon-btn" id="closeWorkModal">✕</button>
           </div>
           <form id="workForm">
+            <div id="workQuickTemplates">
+              <label>Schnellvorlage</label>
+              <button type="button" id="workMeetingTemplate" aria-label="Donnerstags-Meeting, 13 bis 14 Uhr übernehmen">
+                <span>📅 Donnerstags-Meeting<span class="template-subtitle">13:00–14:00 Uhr · Nur übernehmen, wenn es stattfindet</span></span>
+                <span class="template-arrow">＋</span>
+              </button>
+            </div>
             <input type="hidden" id="workId">
             <label>Benutzer</label>
             <input id="workUserDisplay" value="Emely" readonly style="background:#f3f4f6;">
@@ -1394,8 +1426,24 @@
     field.addEventListener("change", syncWorkPickerDisplays);
   });
 
+  document.getElementById("workMeetingTemplate").addEventListener("click", () => {
+    // Den nächsten Donnerstag einschließlich heute im lokalen Kalender auswählen.
+    const today = new Date();
+    const daysUntilThursday = (4 - today.getDay() + 7) % 7;
+    const meetingDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + daysUntilThursday);
+    const year = meetingDate.getFullYear();
+    const month = String(meetingDate.getMonth() + 1).padStart(2, "0");
+    const day = String(meetingDate.getDate()).padStart(2, "0");
+    document.getElementById("workDate").value = `${year}-${month}-${day}`;
+    document.getElementById("workFrom").value = "13:00";
+    document.getElementById("workTo").value = "14:00";
+    document.getElementById("workNote").value = "Donnerstags-Meeting";
+    syncWorkPickerDisplays();
+  });
+
   function openWorkModal(work=null) {
     document.getElementById("workModalTitle").textContent = work ? "Arbeitszeit bearbeiten" : "Arbeitszeit hinzufügen";
+    document.getElementById("workQuickTemplates").classList.toggle("hidden", Boolean(work));
     document.getElementById("workId").value = work?.id || "";
     const emelyProfile = profilesCache.find(p =>
       (p.username || "").toLowerCase() === "emely" ||
