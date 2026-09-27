@@ -370,6 +370,64 @@
       .stats { grid-template-columns:1fr 1fr; }
       .two { grid-template-columns:1fr; }
     }
+
+    /* Arbeitszeiten: iOS-Date/Time-Controls dürfen nicht über den Dialog hinausragen. */
+    #workModal, #workModal .modal-card, #workModal #workForm,
+    #workModal #workForm .two, #workModal #workForm .two > div {
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    #workModal .modal-card { width: min(520px, 100%); overflow-x: hidden; }
+    #workModal #workForm { width: 100%; }
+    #workModal #workForm .two { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    #workModal #workForm input:not([type="hidden"]) {
+      display: block;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+    #workModal #workForm input[type="date"],
+    #workModal #workForm input[type="time"] {
+      display: block;
+      min-width: 0;
+      width: 100%;
+      max-width: 100%;
+      padding: 13px 10px;
+      font-family: inherit;
+      font-size: 16px;
+    }
+    #workModal #workForm input[type="date"]::-webkit-date-and-time-value,
+    #workModal #workForm input[type="time"]::-webkit-date-and-time-value {
+      min-width: 0;
+      text-align: center;
+    }
+    @media (max-width: 800px) {
+      #workModal { padding: 8px; align-items: center; }
+      #workModal .modal-card {
+        width: 100%;
+        max-width: min(520px, calc(100vw - 16px));
+        max-height: min(90dvh, 780px);
+        margin: 0 auto;
+        padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+      }
+      #workModal #workForm .two { grid-template-columns: minmax(0, 1fr); }
+      #workModal #workForm .two > div { min-width: 0; width: 100%; }
+      #workModal #workForm input[type="date"],
+      #workModal #workForm input[type="time"] {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+      }
+      #workModal .modal-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+      #workModal .modal-actions button { width: 100%; min-width: 0; margin: 0; }
+    }
+    body.work-modal-open { position: fixed; width: 100%; overflow: hidden; }
   </style>
 </head>
 <body>
@@ -1095,7 +1153,6 @@
   document.getElementById("workPdfBtn").onclick = function() {
     const month = document.getElementById("workSearch").value;
     const rows = workCache.filter(w => !month || w.datum.startsWith(month));
-
     if (!rows.length) {
       alert("Für den ausgewählten Zeitraum sind keine Arbeitszeiten vorhanden.");
       return;
@@ -1103,65 +1160,70 @@
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-
+    const pageHeight = doc.internal.pageSize.getHeight();
     const title = month
       ? `MINE – Arbeitszeiten ${month.split("-")[1]}/${month.split("-")[0]}`
       : "MINE – Arbeitszeiten";
-
-    doc.setFontSize(20);
-    doc.text(title, 15, 18);
-    doc.setFontSize(10);
-    doc.text(`Erstellt am ${new Date().toLocaleDateString("de-DE")}`, 15, 25);
-
-    let y = 36;
-    const x = [15, 45, 78, 135, 190];
-
-    doc.setFontSize(10);
-    doc.setFont(undefined, "bold");
-    doc.text("Datum", x[0], y);
-    doc.text("Uhrzeit", x[1], y);
-    doc.text("Arbeitsumfang", x[2], y);
-    doc.text("Arbeitszeit", x[3], y);
-    doc.text("Benutzer", x[4], y);
-
-    doc.setFont(undefined, "normal");
-    y += 7;
-
+    // Spalten in mm: Datum, Uhrzeit, Arbeitsumfang, Arbeitszeit, Benutzer.
+    // Der Arbeitsumfang wird umgebrochen, niemals über die Nachbarspalte gezeichnet.
+    const columns = [
+      { x: 13, width: 29, title: "Datum" },
+      { x: 45, width: 34, title: "Uhrzeit" },
+      { x: 83, width: 125, title: "Arbeitsumfang" },
+      { x: 214, width: 32, title: "Arbeitszeit" },
+      { x: 251, width: 31, title: "Benutzer" }
+    ];
+    let y = 0;
+    function newPage(first = false) {
+      if (!first) doc.addPage();
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(17);
+      doc.text(title, 13, 17);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(`Erstellt am ${new Date().toLocaleDateString("de-DE")}`, 13, 24);
+      doc.setFillColor(239, 242, 247);
+      doc.rect(12, 29, 273, 10, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      columns.forEach(col => doc.text(col.title, col.x, 35));
+      doc.setFont("helvetica", "normal");
+      y = 45;
+    }
+    newPage(true);
     let totalMinutes = 0;
-
-    rows.forEach(w => {
+    rows.forEach((w, index) => {
       const minutes = durationMinutes(w.beginn, w.ende);
       totalMinutes += minutes;
       const profile = profilesCache.find(p => p.id === w.user_id);
       const name = profile?.vorname || profile?.username || "Benutzer";
-      const workload = w.notiz || "–";
-
-      const line = [
+      const values = [
         fmtDate(w.datum),
         `${fmtTime(w.beginn)}–${fmtTime(w.ende)}`,
-        workload.length > 42 ? workload.slice(0, 39) + "..." : workload,
+        w.notiz || "–",
         durationText(minutes),
         name
       ];
-
-      line.forEach((value, i) => doc.text(String(value), x[i], y));
-      y += 7;
-
-      if (y > 190) {
-        doc.addPage();
-        y = 20;
+      doc.setFontSize(9);
+      const wrapped = values.map((value, i) =>
+        doc.splitTextToSize(String(value), columns[i].width - 3)
+      );
+      const rowHeight = Math.max(9, Math.max(...wrapped.map(lines => lines.length)) * 4.8 + 3);
+      if (y + rowHeight > pageHeight - 22) newPage();
+      if (index % 2 === 1) {
+        doc.setFillColor(248, 249, 251);
+        doc.rect(12, y - 4, 273, rowHeight, "F");
       }
+      wrapped.forEach((lines, i) => doc.text(lines, columns[i].x, y));
+      y += rowHeight;
+      doc.setDrawColor(228, 231, 235);
+      doc.line(12, y - 4, 285, y - 4);
     });
-
-    y += 5;
-    doc.setFont(undefined, "bold");
-    doc.text(`Gesamt: ${durationText(totalMinutes)}`, 15, y);
-
-    const fileName = month
-      ? `MINE_Arbeitszeiten_${month}.pdf`
-      : "MINE_Arbeitszeiten.pdf";
-
-    doc.save(fileName);
+    if (y + 13 > pageHeight - 12) newPage();
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text(`Gesamt: ${durationText(totalMinutes)}`, 13, y + 7);
+    doc.save(month ? `MINE_Arbeitszeiten_${month}.pdf` : "MINE_Arbeitszeiten.pdf");
   };
 
   async function loadWorkData() {
@@ -1324,7 +1386,7 @@
       return;
     }
     if (durationMinutes(beginn, ende) <= 0) {
-      err.textContent = "Pause darf nicht länger als die Arbeitszeit sein.";
+      err.textContent = "Die Ende-Zeit muss nach der Beginn-Zeit liegen.";
       err.classList.remove("hidden");
       return;
     }
