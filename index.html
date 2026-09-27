@@ -428,6 +428,51 @@
       #workModal .modal-actions button { width: 100%; min-width: 0; margin: 0; }
     }
     body.work-modal-open { position: fixed; width: 100%; overflow: hidden; }
+
+    /* iOS: native Datum-/Uhrzeitfelder sind unsichtbare Picker über
+       maßhaltigen eigenen Anzeigen; Safari kann ihre Breite nicht aufziehen. */
+    #workModal .work-picker {
+      position: relative;
+      display: block;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      height: 52px;
+      overflow: hidden;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: #f3f4f6;
+    }
+    #workModal .work-picker-value {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 0 12px;
+      font-size: 16px;
+      font-weight: 400;
+      color: #111827;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    #workModal .work-picker input[type="date"],
+    #workModal .work-picker input[type="time"] {
+      position: absolute !important;
+      inset: 0 !important;
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      opacity: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      border: 0 !important;
+      cursor: pointer;
+      z-index: 1;
+    }
+    #workModal .work-picker:focus-within { outline: 2px solid #2563eb; outline-offset: 2px; }
   </style>
 </head>
 <body>
@@ -625,10 +670,10 @@
             <input id="workUserDisplay" value="Emely" readonly style="background:#f3f4f6;">
             <input type="hidden" id="workUser">
             <label>Datum</label>
-            <input id="workDate" type="date" required>
+            <div class="work-picker"><span class="work-picker-value" id="workDateDisplay">Datum auswählen</span><input id="workDate" type="date" required aria-label="Datum auswählen"></div>
             <div class="two">
-              <div><label>Beginn</label><input id="workFrom" type="time" required></div>
-              <div><label>Ende</label><input id="workTo" type="time" required></div>
+              <div><label>Beginn</label><div class="work-picker"><span class="work-picker-value" id="workFromDisplay">Beginn auswählen</span><input id="workFrom" type="time" required aria-label="Beginn auswählen"></div></div>
+              <div><label>Ende</label><div class="work-picker"><span class="work-picker-value" id="workToDisplay">Ende auswählen</span><input id="workTo" type="time" required aria-label="Ende auswählen"></div></div>
             </div>
             <label>Arbeitsumfang</label>
             <input id="workNote" placeholder="z. B. Erstellung Winterplan">
@@ -1333,6 +1378,20 @@
     }).join("");
   }
 
+  function syncWorkPickerDisplays() {
+    const date = document.getElementById("workDate").value;
+    const from = document.getElementById("workFrom").value;
+    const to = document.getElementById("workTo").value;
+    document.getElementById("workDateDisplay").textContent = date ? fmtDate(date) : "Datum auswählen";
+    document.getElementById("workFromDisplay").textContent = from ? from.slice(0,5) : "Beginn auswählen";
+    document.getElementById("workToDisplay").textContent = to ? to.slice(0,5) : "Ende auswählen";
+  }
+  ["workDate","workFrom","workTo"].forEach(id => {
+    const field = document.getElementById(id);
+    field.addEventListener("input", syncWorkPickerDisplays);
+    field.addEventListener("change", syncWorkPickerDisplays);
+  });
+
   function openWorkModal(work=null) {
     document.getElementById("workModalTitle").textContent = work ? "Arbeitszeit bearbeiten" : "Arbeitszeit hinzufügen";
     document.getElementById("workId").value = work?.id || "";
@@ -1345,6 +1404,7 @@
     document.getElementById("workFrom").value = work?.beginn?.slice(0,5) || currentTimeValue();
     document.getElementById("workTo").value = work?.ende?.slice(0,5) || plusOneHour(document.getElementById("workFrom").value);
     document.getElementById("workNote").value = work?.notiz || "";
+    syncWorkPickerDisplays();
     document.getElementById("workError").classList.add("hidden");
     const modal = document.getElementById("workModal");
     const scrollY = window.scrollY || window.pageYOffset || 0;
